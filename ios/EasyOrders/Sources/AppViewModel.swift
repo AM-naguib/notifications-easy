@@ -26,6 +26,7 @@ final class AppViewModel: ObservableObject {
 
     func bootstrap() async {
         await refreshAuthorizationStatus()
+        await AppIconManager.shared.applyPreferredIconIfNeeded()
         BackgroundRefreshManager.shared.scheduleNextRefresh()
     }
 
