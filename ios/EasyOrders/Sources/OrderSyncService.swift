@@ -25,7 +25,9 @@ actor OrderSyncService {
             throw SyncError.notificationsUnauthorized
         }
 
-        let orders = try await apiClient.fetchPendingOrders(settings: resolvedSettings)
+        let fetchedOrders = try await apiClient.fetchPendingOrders(settings: resolvedSettings)
+        let orders = fetchedOrders.sorted { $0.createdAt > $1.createdAt }
+
         guard !orders.isEmpty else {
             return .empty(trigger: trigger)
         }
@@ -48,4 +50,3 @@ actor OrderSyncService {
         )
     }
 }
-

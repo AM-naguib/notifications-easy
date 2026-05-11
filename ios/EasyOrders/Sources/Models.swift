@@ -1,6 +1,12 @@
 import Foundation
 
 struct OrderQueueItem: Codable, Identifiable, Hashable, Sendable {
+    private enum NotificationFormat {
+        static let isolateStart = "\u{2068}"
+        static let isolateEnd = "\u{2069}"
+        static let cashMarker = "💵💵"
+    }
+
     let id: String
     let orderNumber: String
     let customerName: String
@@ -19,12 +25,16 @@ struct OrderQueueItem: Codable, Identifiable, Hashable, Sendable {
         case acknowledgedAt = "acknowledged_at"
     }
 
+    private func isolated(_ value: String) -> String {
+        "\(NotificationFormat.isolateStart)\(value)\(NotificationFormat.isolateEnd)"
+    }
+
     var notificationTitle: String {
-        "Order #\(orderNumber) - \(amount)"
+        "Order #\(isolated(orderNumber)) \(NotificationFormat.cashMarker) \(isolated(amount))"
     }
 
     var notificationBody: String {
-        "\(customerName) placed an order \(amount)"
+        "\(isolated(customerName)) placed an order \(isolated(amount)) \(NotificationFormat.cashMarker)"
     }
 }
 

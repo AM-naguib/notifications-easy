@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import sqlite3
 from contextlib import contextmanager
-from datetime import UTC, datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterator
 from uuid import uuid4
@@ -41,7 +41,7 @@ def get_connection(db_path: Path) -> Iterator[sqlite3.Connection]:
 
 
 def _utc_now() -> str:
-    return datetime.now(UTC).isoformat()
+    return datetime.now(timezone.utc).isoformat()
 
 
 def _row_to_order(row: sqlite3.Row) -> OrderQueueItem:
@@ -175,4 +175,3 @@ def acknowledge_orders(db_path: Path, *, ids: list[str]) -> list[str]:
             connection.commit()
 
     return existing_ids
-
