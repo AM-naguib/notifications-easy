@@ -41,6 +41,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p build
+          set +e
           xcodebuild \
             -project EasyOrders.xcodeproj \
             -scheme EasyOrders \
@@ -55,6 +56,23 @@ jobs:
             DEVELOPMENT_TEAM="" \
             PROVISIONING_PROFILE_SPECIFIER="" \
             clean build | tee build/xcodebuild.log
+          build_exit=${PIPESTATUS[0]}
+          set -e
+
+          if [ "$build_exit" -ne 0 ]; then
+            echo "## xcodebuild failure excerpt" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo '```text' >> "$GITHUB_STEP_SUMMARY"
+            grep -E "error:|warning:|SwiftCompile|Ld |CodeSign|Provisioning|Signing" build/xcodebuild.log | tail -n 25 >> "$GITHUB_STEP_SUMMARY" || tail -n 40 build/xcodebuild.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+
+            failure_excerpt="$(grep -E "error:|warning:|SwiftCompile|Ld |CodeSign|Provisioning|Signing" build/xcodebuild.log | tail -n 12 || tail -n 20 build/xcodebuild.log)"
+            failure_excerpt="${failure_excerpt//'%'/'%25'}"
+            failure_excerpt="${failure_excerpt//$'\n'/'%0A'}"
+            failure_excerpt="${failure_excerpt//$'\r'/'%0D'}"
+            echo "::error title=xcodebuild failed::$failure_excerpt"
+            exit "$build_exit"
+          fi
 
       - name: Package unsigned IPA
         working-directory: ios
@@ -73,7 +91,7 @@ jobs:
           zip -qry EasyOrders-unsigned.ipa Payload
 
       - name: Upload unsigned IPA artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: EasyOrders-unsigned-ipa
           path: ios/build/EasyOrders-unsigned.ipa
@@ -82,7 +100,7 @@ jobs:
 
       - name: Upload build logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: EasyOrders-build-logs
           path: ios/build/xcodebuild.log
