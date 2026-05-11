@@ -13,13 +13,15 @@ on:
 jobs:
   build-ios:
     runs-on: macos-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
     defaults:
       run:
         shell: bash
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -28,20 +30,31 @@ jobs:
         working-directory: ios
         run: xcodegen generate
 
+      - name: Show Xcode environment
+        working-directory: ios
+        run: |
+          xcodebuild -version
+          xcodebuild -list -project EasyOrders.xcodeproj
+
       - name: Build unsigned app for iPhone devices
         working-directory: ios
         run: |
           set -euo pipefail
+          mkdir -p build
           xcodebuild \
             -project EasyOrders.xcodeproj \
             -scheme EasyOrders \
             -configuration Release \
             -sdk iphoneos \
+            -destination generic/platform=iOS \
             -derivedDataPath build/DerivedData \
+            CODE_SIGN_STYLE=Manual \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY="" \
-            clean build
+            DEVELOPMENT_TEAM="" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            clean build | tee build/xcodebuild.log
 
       - name: Package unsigned IPA
         working-directory: ios
@@ -67,3 +80,11 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: EasyOrders-build-logs
+          path: ios/build/xcodebuild.log
+          if-no-files-found: warn
+          retention-days: 7
