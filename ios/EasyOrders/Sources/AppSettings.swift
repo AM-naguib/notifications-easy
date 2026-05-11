@@ -2,8 +2,8 @@ import Foundation
 
 struct AppSettings: Sendable {
     static let defaults = AppSettings(
-        baseURLString: "",
-        appToken: "",
+        baseURLString: "https://notfi.wa-otp.com",
+        appToken: "-QEoF0_MrdU9N1Aa3XSzKr6wBeG5ZUzU",
         notificationCount: 3,
         intervalSeconds: 10
     )
@@ -36,18 +36,19 @@ struct AppSettings: Sendable {
 
     static func load() -> AppSettings {
         let defaultsStore = UserDefaults.standard
-        let storedBaseURL = defaultsStore.string(forKey: Keys.baseURLString) ?? defaults.baseURLString
-        let storedToken = defaultsStore.string(forKey: Keys.appToken) ?? defaults.appToken
+        let storedBaseURL = (defaultsStore.string(forKey: Keys.baseURLString) ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let storedToken = (defaultsStore.string(forKey: Keys.appToken) ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
 
         let storedCount = defaultsStore.object(forKey: Keys.notificationCount) as? Int ?? defaults.notificationCount
         let storedInterval = defaultsStore.object(forKey: Keys.intervalSeconds) as? Int ?? defaults.intervalSeconds
 
         return AppSettings(
-            baseURLString: storedBaseURL,
-            appToken: storedToken,
+            baseURLString: storedBaseURL.isEmpty ? defaults.baseURLString : storedBaseURL,
+            appToken: storedToken.isEmpty ? defaults.appToken : storedToken,
             notificationCount: min(max(storedCount, 1), 50),
             intervalSeconds: min(max(storedInterval, 1), 3600)
         )
     }
 }
-

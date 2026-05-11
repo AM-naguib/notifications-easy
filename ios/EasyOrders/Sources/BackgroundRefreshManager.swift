@@ -4,7 +4,7 @@ import Foundation
 final class BackgroundRefreshManager {
     static let shared = BackgroundRefreshManager()
 
-    let taskIdentifier = "com.easyorders.app.refresh"
+    let taskIdentifier = "com.easyorders.side.refresh"
 
     private init() {}
 
