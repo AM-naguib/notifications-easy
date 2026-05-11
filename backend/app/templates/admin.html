@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EasyOrders Control Room</title>
+    <link rel="stylesheet" href="{{ request.url_for('static', path='/styles.css') }}" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">EasyOrders</p>
+          <h1>{{ app_name }}</h1>
+          <p class="hero-copy">
+            Queue order notifications, inspect pending items, and verify what the iPhone app
+            will fetch next.
+          </p>
+        </div>
+        <div class="hero-card">
+          <p class="hero-label">API</p>
+          <code>{{ api_hint }}</code>
+          {% if token_enabled %}
+          <p class="hero-meta">Token protection is enabled for admin + API access.</p>
+          {% else %}
+          <p class="hero-meta">Token protection is currently disabled.</p>
+          {% endif %}
+        </div>
+      </section>
+
+      {% if locked %}
+      <section class="panel narrow">
+        <h2>Admin Token Required</h2>
+        <p class="muted">
+          This dashboard is locked. Append <code>?token=YOUR_TOKEN</code> to the URL or unlock it
+          below.
+        </p>
+        <form action="/admin" method="get" class="stack">
+          <label>
+            <span>Token</span>
+            <input type="password" name="token" placeholder="Enter admin token" />
+          </label>
+          <button type="submit">Unlock Dashboard</button>
+        </form>
+      </section>
+      {% else %}
+      {% if flash %}
+      <section class="flash">{{ flash }}</section>
+      {% endif %}
+
+      <section class="grid">
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">Create Queue Item</p>
+              <h2>New Order</h2>
+            </div>
+            <span class="chip">POST /v1/orders</span>
+          </div>
+
+          <form action="/admin/orders" method="post" class="stack">
+            {% if token_enabled %}
+            <input type="hidden" name="token" value="{{ token }}" />
+            {% endif %}
+
+            <label>
+              <span>Customer Name</span>
+              <input type="text" name="customer_name" placeholder="Sherif Atef" required />
+            </label>
+
+            <label>
+              <span>Amount</span>
+              <input type="text" name="amount" placeholder="650" required />
+            </label>
+
+            <label>
+              <span>Order Number</span>
+              <input type="text" name="order_number" placeholder="Optional: auto-generated if blank" />
+            </label>
+
+            <button type="submit">Queue Order</button>
+          </form>
+        </article>
+
+        <article class="panel stats">
+          <div class="stat-card">
+            <span class="stat-value">{{ pending_orders|length }}</span>
+            <span class="stat-label">Pending</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value">{{ recent_orders|length }}</span>
+            <span class="stat-label">Recent</span>
+          </div>
+          <div class="stat-card">
+            <span class="stat-value">{% if token_enabled %}ON{% else %}OFF{% endif %}</span>
+            <span class="stat-label">Token Guard</span>
+          </div>
+        </article>
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">GET /v1/orders/pending</p>
+            <h2>Pending Queue</h2>
+          </div>
+        </div>
+
+        {% if pending_orders %}
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Customer</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Created</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for order in pending_orders %}
+              <tr>
+                <td>#{{ order.order_number }}</td>
+                <td>{{ order.customer_name }}</td>
+                <td>{{ order.amount }}</td>
+                <td><span class="status pending">{{ order.status }}</span></td>
+                <td>{{ order.created_at }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="empty">No pending orders right now.</p>
+        {% endif %}
+      </section>
+
+      <section class="panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Recent Activity</p>
+            <h2>Recent Orders</h2>
+          </div>
+        </div>
+
+        {% if recent_orders %}
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Order</th>
+                <th>Customer</th>
+                <th>Amount</th>
+                <th>Status</th>
+                <th>Acknowledged</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for order in recent_orders %}
+              <tr>
+                <td>#{{ order.order_number }}</td>
+                <td>{{ order.customer_name }}</td>
+                <td>{{ order.amount }}</td>
+                <td>
+                  <span class="status {{ 'acknowledged' if order.status == 'acknowledged' else 'pending' }}">
+                    {{ order.status }}
+                  </span>
+                </td>
+                <td>{{ order.acknowledged_at or 'Not yet' }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="empty">No orders have been created yet.</p>
+        {% endif %}
+      </section>
+      {% endif %}
+    </main>
+  </body>
+</html>
+
