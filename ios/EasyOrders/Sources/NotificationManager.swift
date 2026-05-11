@@ -68,7 +68,7 @@ final class NotificationManager: NSObject {
     }
 
     private func add(request: UNNotificationRequest) async throws {
-        try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             UNUserNotificationCenter.current().add(request) { error in
                 if let error {
                     continuation.resume(throwing: error)
@@ -80,4 +80,3 @@ final class NotificationManager: NSObject {
         }
     }
 }
-
