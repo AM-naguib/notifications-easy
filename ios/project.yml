@@ -11,12 +11,9 @@ targets:
     platform: iOS
     sources:
       - path: EasyOrders/Sources
-    resources:
       - path: EasyOrders/Resources
         excludes:
           - Info.plist
-    info:
-      path: EasyOrders/Resources/Info.plist
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.easyorders.side
@@ -31,7 +28,7 @@ targets:
         CODE_SIGN_IDENTITY: ""
         DEVELOPMENT_TEAM: ""
         PROVISIONING_PROFILE_SPECIFIER: ""
-        CURRENT_PROJECT_VERSION: 6
-        MARKETING_VERSION: 1.0.5
+        CURRENT_PROJECT_VERSION: 7
+        MARKETING_VERSION: 1.0.6
         TARGETED_DEVICE_FAMILY: "1"
         SUPPORTS_MACCATALYST: NO
