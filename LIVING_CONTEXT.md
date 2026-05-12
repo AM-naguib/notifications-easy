@@ -25,3 +25,4 @@
 - Do not assume screenshot examples are the exact seed data to reuse.
 - Notification ordering should feel logical to the user: higher/newer order numbers like `#669` should appear before older ones like `#668`.
 - To achieve that in iPhone Notification Center, the app should schedule older orders first and newer orders last, because the system places the most recently delivered notification on top.
+- On manual fetches, the app should clear old EasyOrders pending and delivered notifications before scheduling a fresh batch, otherwise batches can overlap on-device and make the order look wrong even when the server order is correct.

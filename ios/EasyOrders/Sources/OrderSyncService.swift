@@ -36,6 +36,10 @@ actor OrderSyncService {
             return .empty(trigger: trigger)
         }
 
+        if trigger == "manual" {
+            await NotificationManager.shared.clearOrderNotifications()
+        }
+
         try await NotificationManager.shared.scheduleNotifications(
             for: Array(deliveryOrder),
             intervalSeconds: resolvedSettings.intervalSeconds

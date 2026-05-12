@@ -3,6 +3,8 @@ import UserNotifications
 
 final class NotificationManager: NSObject {
     static let shared = NotificationManager()
+    private let orderNotificationIdentifierPrefix = "order-"
+    private let orderThreadIdentifier = "easyorders-orders"
 
     private override init() {}
 
@@ -52,18 +54,49 @@ final class NotificationManager: NSObject {
             content.title = order.notificationTitle
             content.body = order.notificationBody
             content.sound = .default
-            content.threadIdentifier = "easyorders-orders"
+            content.threadIdentifier = orderThreadIdentifier
             content.userInfo = ["order_id": order.id]
 
             let delay = TimeInterval((index * safeInterval) + 1)
             let trigger = UNTimeIntervalNotificationTrigger(timeInterval: delay, repeats: false)
             let request = UNNotificationRequest(
-                identifier: "order-\(order.id)",
+                identifier: "\(orderNotificationIdentifierPrefix)\(order.id)",
                 content: content,
                 trigger: trigger
             )
 
             try await add(request: request)
+        }
+    }
+
+    func clearOrderNotifications() async {
+        let center = UNUserNotificationCenter.current()
+
+        let pendingIdentifiers: [String] = await withCheckedContinuation { continuation in
+            center.getPendingNotificationRequests { requests in
+                let identifiers = requests
+                    .map(\.identifier)
+                    .filter { $0.hasPrefix(self.orderNotificationIdentifierPrefix) }
+                continuation.resume(returning: identifiers)
+            }
+        }
+
+        if !pendingIdentifiers.isEmpty {
+            center.removePendingNotificationRequests(withIdentifiers: pendingIdentifiers)
+        }
+
+        let deliveredIdentifiers: [String] = await withCheckedContinuation { continuation in
+            center.getDeliveredNotifications { notifications in
+                let identifiers = notifications
+                    .map(\.request)
+                    .filter { $0.identifier.hasPrefix(self.orderNotificationIdentifierPrefix) }
+                    .map(\.identifier)
+                continuation.resume(returning: identifiers)
+            }
+        }
+
+        if !deliveredIdentifiers.isEmpty {
+            center.removeDeliveredNotifications(withIdentifiers: deliveredIdentifiers)
         }
     }
 
