@@ -26,14 +26,18 @@ actor OrderSyncService {
         }
 
         let fetchedOrders = try await apiClient.fetchPendingOrders(settings: resolvedSettings)
+        // Keep the newest orders first for previews and app state.
         let orders = fetchedOrders.sorted { $0.createdAt > $1.createdAt }
+        // Schedule the oldest first so the newest notification is delivered last
+        // and therefore stays on top in Notification Center.
+        let deliveryOrder = orders.reversed()
 
         guard !orders.isEmpty else {
             return .empty(trigger: trigger)
         }
 
         try await NotificationManager.shared.scheduleNotifications(
-            for: orders,
+            for: Array(deliveryOrder),
             intervalSeconds: resolvedSettings.intervalSeconds
         )
 

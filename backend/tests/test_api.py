@@ -33,8 +33,8 @@ def test_order_lifecycle_and_acknowledgement(tmp_path: Path) -> None:
         assert pending.status_code == 200
         pending_items = pending.json()["items"]
         assert [item["customer_name"] for item in pending_items] == [
-            "Sherif Atef",
             "Ibrahim Mohamed",
+            "Sherif Atef",
         ]
 
         ack = client.post(
@@ -47,7 +47,7 @@ def test_order_lifecycle_and_acknowledgement(tmp_path: Path) -> None:
         remaining = client.get("/v1/orders/pending", params={"limit": 5})
         assert remaining.status_code == 200
         assert [item["customer_name"] for item in remaining.json()["items"]] == [
-            "Ibrahim Mohamed"
+            "Sherif Atef"
         ]
 
 
@@ -63,6 +63,46 @@ def test_pending_limit_is_respected(tmp_path: Path) -> None:
         pending = client.get("/v1/orders/pending", params={"limit": 2})
         assert pending.status_code == 200
         assert pending.json()["count"] == 2
+
+
+def test_demo_order_batch_generation(tmp_path: Path) -> None:
+    with make_client(tmp_path) as client:
+        response = client.post(
+            "/v1/orders/demo",
+            json={"count": 6, "start_order_number": 680},
+        )
+        assert response.status_code == 201
+
+        payload = response.json()
+        assert payload["count"] == 6
+        assert [item["order_number"] for item in payload["items"]] == [
+            "680",
+            "681",
+            "682",
+            "683",
+            "684",
+            "685",
+        ]
+
+        amounts = [int(item["amount"]) for item in payload["items"]]
+        assert all(1339 <= amount <= 1379 for amount in amounts)
+
+        names = [item["customer_name"] for item in payload["items"]]
+        assert any(any("\u0600" <= char <= "\u06FF" for char in name) for name in names)
+        assert any(all(ord(char) < 128 for char in name) for name in names)
+        assert any(len(name.split()) >= 3 for name in names)
+
+        pending = client.get("/v1/orders/pending", params={"limit": 10})
+        assert pending.status_code == 200
+        assert pending.json()["count"] == 6
+        assert [item["order_number"] for item in pending.json()["items"]] == [
+            "685",
+            "684",
+            "683",
+            "682",
+            "681",
+            "680",
+        ]
 
 
 def test_token_protection_on_json_api(tmp_path: Path) -> None:
@@ -87,4 +127,3 @@ def test_admin_unlock_flow(tmp_path: Path) -> None:
         unlocked = client.get("/admin", params={"token": "secret-token"})
         assert unlocked.status_code == 200
         assert "Create Queue Item" in unlocked.text
-

@@ -48,6 +48,16 @@ class PendingOrdersResponse(BaseModel):
     count: int
 
 
+class BulkOrderCreateRequest(BaseModel):
+    count: int = Field(default=20, ge=1, le=50)
+    start_order_number: int = Field(default=668, ge=1, le=999999)
+
+
+class BulkOrderCreateResponse(BaseModel):
+    items: list[OrderQueueItem]
+    count: int
+
+
 class AcknowledgeRequest(BaseModel):
     ids: list[str] = Field(default_factory=list, max_length=50)
 
@@ -59,4 +69,3 @@ class AcknowledgeResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     status: Literal["ok"]
-

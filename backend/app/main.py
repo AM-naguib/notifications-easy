@@ -10,9 +10,12 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 from .auth import admin_token_is_valid, require_token
+from .demo_orders import build_demo_orders
 from .schemas import (
     AcknowledgeRequest,
     AcknowledgeResponse,
+    BulkOrderCreateRequest,
+    BulkOrderCreateResponse,
     HealthResponse,
     OrderCreate,
     OrderQueueItem,
@@ -61,6 +64,30 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             order_number=payload.order_number,
         )
 
+    @app.post("/v1/orders/demo", response_model=BulkOrderCreateResponse, status_code=201)
+    async def create_demo_orders_endpoint(
+        payload: BulkOrderCreateRequest,
+        request: Request,
+        x_app_token: Annotated[str | None, Header(alias="X-App-Token")] = None,
+    ) -> BulkOrderCreateResponse:
+        require_token(request, x_app_token)
+
+        created_orders = []
+        for order in build_demo_orders(
+            count=payload.count,
+            start_order_number=payload.start_order_number,
+        ):
+            created_orders.append(
+                create_order(
+                    request.app.state.settings.database_path,
+                    customer_name=order.customer_name,
+                    amount=order.amount,
+                    order_number=order.order_number,
+                )
+            )
+
+        return BulkOrderCreateResponse(items=created_orders, count=len(created_orders))
+
     @app.get("/v1/orders/pending", response_model=PendingOrdersResponse)
     async def pending_orders_endpoint(
         request: Request,
@@ -92,9 +119,15 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         request: Request,
         token: str | None = None,
         created: int | None = None,
+        generated: int | None = None,
     ) -> HTMLResponse:
         is_valid, provided_token = admin_token_is_valid(request, token)
         token_enabled = bool(request.app.state.settings.app_token)
+        flash_message = None
+        if generated:
+            flash_message = f"{generated} demo orders generated successfully."
+        elif created:
+            flash_message = "Order added successfully."
 
         context = {
             "request": request,
@@ -102,8 +135,8 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             "token": provided_token,
             "token_enabled": token_enabled,
             "locked": token_enabled and not is_valid,
-            "flash": "Order added successfully." if created else None,
-            "api_hint": "/v1/orders, /v1/orders/pending, /v1/orders/ack",
+            "flash": flash_message,
+            "api_hint": "/v1/orders, /v1/orders/demo, /v1/orders/pending, /v1/orders/ack",
             "pending_orders": [],
             "recent_orders": [],
         }
@@ -143,6 +176,36 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         )
 
         query_params = {"created": 1}
+        if request.app.state.settings.app_token:
+            query_params["token"] = token or ""
+
+        return RedirectResponse(
+            url=f"/admin?{urlencode(query_params)}",
+            status_code=303,
+        )
+
+    @app.post("/admin/orders/demo", response_class=RedirectResponse)
+    async def admin_create_demo_orders(
+        request: Request,
+        count: Annotated[int, Form(ge=1, le=50)] = 20,
+        start_order_number: Annotated[int, Form(ge=1)] = 668,
+        token: Annotated[str | None, Form()] = None,
+    ) -> RedirectResponse:
+        require_token(request, token)
+
+        created_orders = build_demo_orders(
+            count=count,
+            start_order_number=start_order_number,
+        )
+        for order in created_orders:
+            create_order(
+                request.app.state.settings.database_path,
+                customer_name=order.customer_name,
+                amount=order.amount,
+                order_number=order.order_number,
+            )
+
+        query_params = {"generated": len(created_orders)}
         if request.app.state.settings.app_token:
             query_params["token"] = token or ""
 

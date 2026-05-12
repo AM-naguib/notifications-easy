@@ -115,7 +115,7 @@ def list_pending_orders(db_path: Path, *, limit: int) -> list[OrderQueueItem]:
             SELECT id, order_number, customer_name, amount, status, created_at, acknowledged_at
             FROM orders
             WHERE status = 'pending'
-            ORDER BY sequence ASC
+            ORDER BY sequence DESC
             LIMIT ?
             """,
             (safe_limit,),
@@ -155,7 +155,7 @@ def acknowledge_orders(db_path: Path, *, ids: list[str]) -> list[str]:
             SELECT id
             FROM orders
             WHERE status = 'pending' AND id IN ({placeholders})
-            ORDER BY sequence ASC
+            ORDER BY sequence DESC
             """,
             ordered_ids,
         ).fetchall()

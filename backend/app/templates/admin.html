@@ -82,6 +82,39 @@
           </form>
         </article>
 
+        <article class="panel">
+          <div class="panel-head">
+            <div>
+              <p class="eyebrow">POST /v1/orders/demo</p>
+              <h2>Generate Demo Batch</h2>
+            </div>
+            <span class="chip">Arabic + English mix</span>
+          </div>
+
+          <form action="/admin/orders/demo" method="post" class="stack">
+            {% if token_enabled %}
+            <input type="hidden" name="token" value="{{ token }}" />
+            {% endif %}
+
+            <label>
+              <span>Count</span>
+              <input type="number" name="count" min="1" max="50" value="20" required />
+            </label>
+
+            <label>
+              <span>Start Order Number</span>
+              <input type="number" name="start_order_number" min="1" value="668" required />
+            </label>
+
+            <p class="muted">
+              Creates mixed Arabic/English names, sometimes triple names, with amounts between
+              <code>1339</code> and <code>1379</code>.
+            </p>
+
+            <button type="submit">Generate Demo Orders</button>
+          </form>
+        </article>
+
         <article class="panel stats">
           <div class="stat-card">
             <span class="stat-value">{{ pending_orders|length }}</span>
@@ -181,4 +214,3 @@
     </main>
   </body>
 </html>
-
